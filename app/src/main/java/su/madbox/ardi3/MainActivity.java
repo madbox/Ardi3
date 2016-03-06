@@ -115,8 +115,6 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(toolbar);
 
-
-
         View.OnClickListener getDistanceOnClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -163,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
 
+
             }
         };
 
@@ -199,6 +198,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("LISTVIEW", "itemSelect: nothing");
             }
         });
+
+        Intent intent = new Intent(this, BluetoothService.class);
+        startService(intent);
 
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(blueToothDiscoveryReciever, filter);
