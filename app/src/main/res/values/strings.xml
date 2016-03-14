@@ -11,4 +11,20 @@
     <string name="button_bluetooth_get_distance">get distance</string>
     <string name="title_activity_bluetooth_connection">BluetoothConnectionActivity</string>
     <string name="no_bluetooth_devices">No Bluetooth devices found</string>
+    <string name="error_connect_failed">Connection failed</string>
+    <string name="error_connect_lost">Connection lost</string>
+    <string name="title_paired_bluetooth_devices">Paired devices</string>
+    <string name="title_found_bluetooth_devices">Found devices</string>
+    <string name="title_bluetooth">Bluetooth</string>
+    <string name="title_bluetooth_disabled">disabled</string>
+    <string name="title_bluetooth_status_unknown">Unknown</string>
+    <string name="title_bluetooth_status">Bluetooth status</string>
+    <string name="title_bluetooth_state_off">Off</string>
+    <string name="title_bluetooth_state_on">On</string>
+    <string name="title_bluetooth_state_turning_off">Turning off</string>
+    <string name="title_bluetooth_state_turning_on">Turning on</string>
+    <string name="title_bluetooth_state_unknown">Unknown</string>
+    <string name="title_bluetooth_discovery">Discovery</string>
+    <string name="title_bluetooth_discovery_disabled">Inactive</string>
+    <string name="title_bluetooth_discovery_in_progress">In progress</string>
 </resources>

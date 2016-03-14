@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
@@ -15,55 +15,102 @@
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:showIn="@layout/activity_main">
 
-
         <TextView android:id="@+id/bluetooth_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_width="wrap_content"
+            android:hint="@string/title_bluetooth"
+            android:textSize="@dimen/abc_text_size_medium_material" />
+        <TextView android:id="@+id/bluetooth_value"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/abc_text_size_medium_material"
-            android:hint="@string/title_bluetooth_connect" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/button_bluetooth_discover"
-            android:onClick="bluetoothDiscover" />
+            android:layout_weight="2"
+            android:hint="@string/title_bluetooth_disabled"
+            android:textSize="@dimen/abc_text_size_medium_material" />
 
     </LinearLayout>
-
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:showIn="@layout/activity_main">
+
+        <TextView android:id="@+id/bluetooth_discovery_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/title_bluetooth_discovery"
+            android:textSize="@dimen/abc_text_size_medium_material" />
+        <TextView android:id="@+id/bluetooth_discovery_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:hint="@string/title_bluetooth_discovery_disabled"
+            android:textSize="@dimen/abc_text_size_medium_material" />
+
+    </LinearLayout>
+
+    <!-- Paired devices list -->
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:showIn="@layout/activity_main">
 
 
-        <TextView android:id="@+id/text_bluetooth_devices"
-            android:layout_weight="1"
+        <TextView android:id="@+id/text_paired_bluetooth_devices"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/abc_text_size_medium_material"
-            android:hint="@string/title_bluetooth_devices"
-            android:textAlignment="center" />
+            android:layout_weight="1"
+            android:hint="@string/title_paired_bluetooth_devices"
+            android:textAlignment="center"
+            android:textSize="@dimen/abc_text_size_medium_material" />
 
-        <ListView android:id="@+id/list_bluetooth_devices"
+        <ListView android:id="@+id/list_paired_bluetooth_devices"
             android:layout_width="match_parent"
             android:layout_height="143dp"
             android:textSize="@dimen/abc_text_size_medium_material"
             tools:listitem="@android:layout/simple_list_item_1">
         </ListView>
 
+    </LinearLayout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:showIn="@layout/activity_main">
 
 
+        <TextView android:id="@+id/text_found_bluetooth_devices"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/title_found_bluetooth_devices"
+            android:textAlignment="center"
+            android:textSize="@dimen/abc_text_size_medium_material" />
+
+        <ListView android:id="@+id/list_found_bluetooth_devices"
+            android:layout_width="match_parent"
+            android:layout_height="143dp"
+            android:textSize="@dimen/abc_text_size_medium_material"
+            tools:listitem="@android:layout/simple_list_item_1">
+        </ListView>
     </LinearLayout>
 
     <!--
@@ -92,19 +139,26 @@
     </LinearLayout>
     -->
 
+    <!--<Button-->
+        <!--android:id="@+id/getDistance"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/button_bluetooth_get_distance" />-->
+
     <Button
-        android:id="@+id/getDistance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/button_bluetooth_get_distance" />
+        android:gravity="center"
+        android:onClick="bluetoothEnableAndDiscover"
+        android:text="@string/button_bluetooth_discover" />
 
-    <ImageButton
-        android:layout_width="72dp"
-        android:layout_height="60dp"
-        android:id="@+id/imageButton"
-        android:layout_gravity="center_horizontal"
-        android:src="@drawable/ic_bluetooth_24dp"
-        android:background="#00ffffff"
-        android:onClick="makeBluetoothConnection"/>
+    <!--<ImageButton-->
+        <!--android:layout_width="72dp"-->
+        <!--android:layout_height="60dp"-->
+        <!--android:id="@+id/imageButton"-->
+        <!--android:layout_gravity="center_horizontal"-->
+        <!--android:src="@drawable/ic_bluetooth_24dp"-->
+        <!--android:background="#00ffffff"-->
+        <!--android:onClick="makeBluetoothConnection"/>-->
 
 </LinearLayout>

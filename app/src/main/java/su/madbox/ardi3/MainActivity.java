@@ -6,97 +6,72 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.SystemClock;
-import android.support.annotation.AttrRes;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.transition.Explode;
 import android.transition.Slide;
 import android.transition.Transition;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.content.Intent;
-import android.view.ViewDebug;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     public final static String EXTRA_MESSAGE = "su.madbox.Ardi3.MESSAGE";
-
-    //Экземпляры классов наших кнопок.
-    Button getDistanceButton;
-
+    public static final String TAG = "Bluetooth";
     private final static int REQUEST_ENABLE_BT = 4324;
-    private Set<BluetoothDevice> pairedDevices;
-    private BluetoothAdapter mBluetoothAdapter;
-    //Сокет, с помощью которого мы будем отправлять данные на Arduino
-    private BluetoothSocket mSocket;
-    private BluetoothDevice mDevice;
-
     // UUID for Serial port service
     // http://www.bluecove.org/bluecove/apidocs/javax/bluetooth/UUID.html
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-
-    ArrayList<MyBluetoothDevice> mListItems = new ArrayList<MyBluetoothDevice>();
-    ArrayAdapter<MyBluetoothDevice> mArrayAdapter;
-
+    //Экземпляры классов наших кнопок.
+    Button getDistanceButton;
+    ArrayList<MyBluetoothDevice> mListItemsPaired = new ArrayList<MyBluetoothDevice>();
+    ArrayAdapter<MyBluetoothDevice> mArrayAdapterPaired;
+    ArrayList<MyBluetoothDevice> mListItemsFound = new ArrayList<MyBluetoothDevice>();
+    ArrayAdapter<MyBluetoothDevice> mArrayAdapterFound;
     private final BroadcastReceiver blueToothDiscoveryReciever = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d("Bluetooth", "onReceive");
-
             String action = intent.getAction();
+            Log.d(TAG, "onReceive: " + action);
+
             // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.d("Bluetooth", "Device found: " + device.getName() + " - " + device.getAddress());
+                Log.d(TAG, "onReceive Device found: " + device.getName() + " - " + device.getAddress());
 
-                addDiscoveredDevice(device);
-                // Add the name and address to an array adapter to show in a ListView
-                //mArrayAdapter.add(device.getName() + "\n" + device.getAddress());
-
+                addDiscoveredDevice(mArrayAdapterFound, device);
+            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                setBluetoothStateMarkerText(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 0));
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+                setBluetoothDiscoveryMarkerText(true);
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                setBluetoothDiscoveryMarkerText(false);
             }
         }
     };
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
+    private Set<BluetoothDevice> pairedDevices;
+    private Set<BluetoothDevice> foundDevices;
+    private BluetoothAdapter mBluetoothAdapter;
+    //Сокет, с помощью которого мы будем отправлять данные на Arduino
+    private BluetoothSocket mSocket;
+    private BluetoothDevice mDevice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,98 +90,95 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(toolbar);
 
-        View.OnClickListener getDistanceOnClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d("onClick", v.toString());
+//        View.OnClickListener getDistanceOnClickListener = new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Log.d("onClick", v.toString());
+//
+//                if (mSocket != null) {
+//                    //Пытаемся послать данные
+//                    try {
+//                        //Получаем выходной поток для передачи данных
+//                        OutputStream outStream = mSocket.getOutputStream();
+//                        final InputStream inStream = mSocket.getInputStream();
+//
+//                        //В зависимости от того, какая кнопка была нажата,
+//                        //изменяем данные для посылки
+//                        if (v == getDistanceButton) {
+//                            //Пишем данные в выходной поток
+//                            outStream.write("get_dist\n".getBytes(Charset.forName("US-ASCII")));
+//                            Handler handler = new Handler();
+//                            handler.postDelayed(new Runnable() {
+//                                public void run() {
+//                                    try {
+//                                        byte[] buffer = new byte[256];  // buffer store for the stream
+//                                        int bytes; // bytes returned from read()
+//
+//                                        Log.d(TAG, "available: " + Integer.toString(inStream.available()));
+//                                        bytes = inStream.read(buffer);
+//                                        Log.d(TAG, "read bytes: " + Integer.toString(bytes));
+//                                        Toast.makeText(getApplicationContext(), new String(buffer, "US-ASCII").trim(), Toast.LENGTH_LONG).show();
+//                                    } catch (IOException e) {
+//                                        //Если есть ошибки, выводим их в лог
+//                                        Log.d("onClick", e.getMessage());
+//                                    }
+//                                }
+//                            }, 1000);
+//                        }
+//
+//                    } catch (IOException e) {
+//                        //Если есть ошибки, выводим их в лог
+//                        Log.d("onClick", e.getMessage());
+//                    }
+//                } else {
+//                    Snackbar.make(v, "Should be connected to some device first", Snackbar.LENGTH_LONG)
+//                            .setAction("Action", null).show();
+//                }
+//
+//
+//
+//            }
+//        };
 
-                if (mSocket != null) {
-                    //Пытаемся послать данные
-                    try {
-                        //Получаем выходной поток для передачи данных
-                        OutputStream outStream = mSocket.getOutputStream();
-                        final InputStream inStream = mSocket.getInputStream();
+        //"Соединям" вид кнопки в окне приложения с реализацией
+        // getDistanceButton = (Button) findViewById(R.id.getDistance);
 
-                        //В зависимости от того, какая кнопка была нажата,
-                        //изменяем данные для посылки
-                        if (v == getDistanceButton) {
-                            //Пишем данные в выходной поток
-                            outStream.write("get_dist\n".getBytes(Charset.forName("US-ASCII")));
-                            Handler handler = new Handler();
-                            handler.postDelayed(new Runnable() {
-                                public void run() {
-                                    try {
-                                        byte[] buffer = new byte[256];  // buffer store for the stream
-                                        int bytes; // bytes returned from read()
-
-                                        Log.d("BLUETOOTH", "available: " + Integer.toString(inStream.available()));
-                                        bytes = inStream.read(buffer);
-                                        Log.d("BLUETOOTH", "read bytes: " + Integer.toString(bytes));
-                                        Toast.makeText(getApplicationContext(), new String(buffer, "US-ASCII").trim(), Toast.LENGTH_LONG).show();
-                                    } catch (IOException e) {
-                                        //Если есть ошибки, выводим их в лог
-                                        Log.d("onClick", e.getMessage());
-                                    }
-                                }
-                            }, 1000);
-                        }
-
-                    } catch (IOException e) {
-                        //Если есть ошибки, выводим их в лог
-                        Log.d("onClick", e.getMessage());
-                    }
-                } else {
-                    Snackbar.make(v, "Should be connected to some device first", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
+        //Добавлем "слушатель нажатий" к кнопке
+        //getDistanceButton.setOnClickListener(getDistanceOnClickListener);
 
 
-
+        AdapterView.OnItemClickListener mOnItemClickListener = new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                bluetoothConnect((MyBluetoothDevice) parent.getItemAtPosition(position));
             }
         };
 
-        //"Соединям" вид кнопки в окне приложения с реализацией
-        getDistanceButton = (Button) findViewById(R.id.getDistance);
-
-        //Добавлем "слушатель нажатий" к кнопке
-        getDistanceButton.setOnClickListener(getDistanceOnClickListener);
-
-        ListView listView = (ListView) findViewById(R.id.list_bluetooth_devices);
-        mArrayAdapter = new ArrayAdapter<MyBluetoothDevice>(this,
+        ListView listViewPaired = (ListView) findViewById(R.id.list_paired_bluetooth_devices);
+        mArrayAdapterPaired = new ArrayAdapter<MyBluetoothDevice>(this,
                 android.R.layout.simple_list_item_1,
-                mListItems);
-        listView.setAdapter(mArrayAdapter);
+                mListItemsPaired);
+        listViewPaired.setAdapter(mArrayAdapterPaired);
+        listViewPaired.setOnItemClickListener(mOnItemClickListener);
 
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView<?> parent, View view,
-                                    int position, long id) {
-                Log.d("LISTVIEW", "itemClick: position = " + position + ", id = "
-                        + id);
-                bluetoothConnect((MyBluetoothDevice) parent.getItemAtPosition(position));
-            }
-        });
-
-        listView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            public void onItemSelected(AdapterView<?> parent, View view,
-                                       int position, long id) {
-                Log.d("LISTVIEW", "itemSelect: position = " + position + ", id = "
-                        + id);
-            }
-
-            public void onNothingSelected(AdapterView<?> parent) {
-                Log.d("LISTVIEW", "itemSelect: nothing");
-            }
-        });
+        ListView listViewFound = (ListView) findViewById(R.id.list_found_bluetooth_devices);
+        mArrayAdapterFound = new ArrayAdapter<MyBluetoothDevice>(this,
+                android.R.layout.simple_list_item_1,
+                mListItemsFound);
+        listViewFound.setAdapter(mArrayAdapterFound);
+        listViewFound.setOnItemClickListener(mOnItemClickListener);
 
         Intent intent = new Intent(this, BluetoothService.class);
         startService(intent);
 
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        IntentFilter filter = new IntentFilter(); //(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         registerReceiver(blueToothDiscoveryReciever, filter);
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        bluetoothEnableAndDiscover(this.getCurrentFocus());
     }
 
     @Override
@@ -242,27 +214,28 @@ public class MainActivity extends AppCompatActivity {
         Log.d("onActivityResult", "fired! req:" + requestCode + " res: " + resultCode);
         //Выводим сообщение об успешном подключении bluetooth
         if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == RESULT_OK)
+            if (resultCode == RESULT_OK) {
                 Toast.makeText(getApplicationContext(), "Bluetooth enabled", Toast.LENGTH_LONG).show();
-            else
+                bluetoothDiscover(this.getCurrentFocus());
+            } else {
                 Toast.makeText(getApplicationContext(), "Failed to enable bluetooth", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
-    public void addDiscoveredDevice(BluetoothDevice device) {
+    public void addDiscoveredDevice(ArrayAdapter<MyBluetoothDevice> arrayAdapter, BluetoothDevice device) {
         boolean found = false;
-        for (MyBluetoothDevice myDevice : mListItems) {
-            if (Objects.equals(myDevice.getBluetoothDevice().getAddress(),
+        for (int i = 0; i<arrayAdapter.getCount(); i++) {
+            if (Objects.equals(arrayAdapter.getItem(i).getBluetoothDevice().getAddress(),
                                device.getAddress())) return;
         }
 
-        mListItems.add(new MyBluetoothDevice(device));
-        mArrayAdapter.notifyDataSetChanged();
+        arrayAdapter.add(new MyBluetoothDevice(device));
     }
 
     public void clearDiscoveredDevicesList() {
-        mListItems.clear();
-        mArrayAdapter.notifyDataSetChanged();
+        mArrayAdapterPaired.clear();
+        mArrayAdapterFound.clear();
     }
 
     /**
@@ -282,18 +255,25 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
     }
 
-    public void bluetoothDiscover(View view) {
+    public void bluetoothEnableAndDiscover(View view) {
         //Мы хотим использовать тот bluetooth-адаптер, который задается по умолчанию
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) Log.d("Bluetooth", "mBluetoothAdapter == null");
-        else Log.d("Bluetooth", "mBluetoothAdapter != null");
+        if (mBluetoothAdapter == null) Log.d(TAG, "mBluetoothAdapter == null");
+        else Log.d(TAG, "mBluetoothAdapter != null");
 
-        //Включаем bluetooth. Если он уже включен, то ничего не произойдет
-        if (!mBluetoothAdapter.isEnabled()) {
+        setBluetoothStateMarkerText(mBluetoothAdapter.getState());
+
+        // Если адаптер включен - начнем поиск устройств, иначе - запустим включение адаптера
+        // (поиск запстится в onActivityResult, если успешно включен bluetooth).
+        if (mBluetoothAdapter.isEnabled()) {
+            bluetoothDiscover(this.getCurrentFocus());
+        } else {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
+    }
 
+    public void bluetoothDiscover(View view) {
         clearDiscoveredDevicesList();
 
         pairedDevices = mBluetoothAdapter.getBondedDevices();
@@ -302,18 +282,18 @@ public class MainActivity extends AppCompatActivity {
             // Loop through paired devices
             for (BluetoothDevice device : pairedDevices) {
                 // Add the name and address to an array adapter to show in a ListView
-                addDiscoveredDevice(device);
-                Log.d("Bluetooth", "Paired device: " + device.getName() + " - " + device.getAddress());
-                // mArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                addDiscoveredDevice(mArrayAdapterPaired, device);
+                Log.d(TAG, "Paired device: " + device.getName() + " - " + device.getAddress());
             }
         }
 
-
+        Log.d(TAG, "startDiscovery()");
+        if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
         mBluetoothAdapter.startDiscovery();
     }
 
     public void bluetoothConnect(MyBluetoothDevice device) {
-        Log.d("BLUETOOTH", "Starting connection process");
+        Log.d(TAG, "Starting connection process");
         mBluetoothAdapter.cancelDiscovery();
         mDevice = mBluetoothAdapter.getRemoteDevice(device.getBluetoothDevice().getAddress());
 
@@ -324,9 +304,9 @@ public class MainActivity extends AppCompatActivity {
             // MY_UUID is the app's UUID string, also used by the server code
             tmp = mDevice.createRfcommSocketToServiceRecord(MY_UUID);
         } catch (IOException e) {
-            Log.d("BLUETOOTH", "createRfcommSocketToServiceRecord, IOException " + e.getMessage());
+            Log.d(TAG, "createRfcommSocketToServiceRecord, IOException " + e.getMessage());
         } catch (SecurityException e) {
-            Log.d("BLUETOOTH", "createRfcommSocketToServiceRecord, SecurityException " + e.getMessage());
+            Log.d(TAG, "createRfcommSocketToServiceRecord, SecurityException " + e.getMessage());
         }
 
         mSocket = tmp;
@@ -334,16 +314,16 @@ public class MainActivity extends AppCompatActivity {
         try {
             // Connect the device through the socket. This will block
             // until it succeeds or throws an exception
-            Log.d("BLUETOOTH", "isConnected: " + mSocket.isConnected());
+            Log.d(TAG, "isConnected: " + mSocket.isConnected());
             mSocket.connect();
             Toast.makeText(getApplicationContext(), "Connection established", Toast.LENGTH_LONG).show();
         } catch (IOException connectException) {
             // Unable to connect; close the socket and get out
-            Log.d("BLUETOOTH", "connect, IOException " + connectException.getMessage());
+            Log.d(TAG, "connect, IOException " + connectException.getMessage());
             try {
                 mSocket.close();
             } catch (IOException closeException) {
-                Log.d("BLUETOOTH", "close, IOException " + closeException.getMessage());
+                Log.d(TAG, "close, IOException " + closeException.getMessage());
             }
 
             Toast.makeText(getApplicationContext(), "Unable to connect", Toast.LENGTH_LONG).show();
@@ -355,43 +335,28 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app deep link URI is correct.
-                Uri.parse("android-app://su.madbox.ardi3/http/host/path")
-        );
-        AppIndex.AppIndexApi.start(client, viewAction);
+    public void setBluetoothStateMarkerText(int state) {
+        TextView text = (TextView) findViewById(R.id.bluetooth_value);
+        switch (state) {
+            case BluetoothAdapter.STATE_OFF:
+                text.setHint(R.string.title_bluetooth_state_off); break;
+            case BluetoothAdapter.STATE_ON:
+                text.setHint(R.string.title_bluetooth_state_on); break;
+            case BluetoothAdapter.STATE_TURNING_OFF:
+                text.setHint(R.string.title_bluetooth_state_turning_off); break;
+            case BluetoothAdapter.STATE_TURNING_ON:
+                text.setHint(R.string.title_bluetooth_state_turning_on); break;
+            default:
+                text.setHint(R.string.title_bluetooth_state_unknown); break;
+        }
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        Action viewAction = Action.newAction(
-                Action.TYPE_VIEW, // TODO: choose an action type.
-                "Main Page", // TODO: Define a title for the content shown.
-                // TODO: If you have web page content that matches this app activity's content,
-                // make sure this auto-generated web page URL is correct.
-                // Otherwise, set the URL to null.
-                Uri.parse("http://host/path"),
-                // TODO: Make sure this auto-generated app deep link URI is correct.
-                Uri.parse("android-app://su.madbox.ardi3/http/host/path")
-        );
-        AppIndex.AppIndexApi.end(client, viewAction);
-        client.disconnect();
+    public void setBluetoothDiscoveryMarkerText(boolean discoveryInProgress) {
+        TextView text = (TextView) findViewById(R.id.bluetooth_discovery_value);
+        if (discoveryInProgress) {
+            text.setHint(R.string.title_bluetooth_discovery_in_progress);
+        } else {
+            text.setHint(R.string.title_bluetooth_discovery_disabled);
+        }
     }
 }
