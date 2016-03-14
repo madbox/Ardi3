@@ -37,7 +37,7 @@ public class BluetoothService extends Service {
     // public mInHangler mHandler = new mInHangler(this);
     private static Handler mHandler = null;
     private final IBinder mBinder = new LocalBinder();
-    public Vector<Byte> packdata = new Vector<Byte>(2048);
+    public Vector<Byte> packdata = new Vector<>(2048);
     private BluetoothAdapter mBluetoothAdapter;
     // device
     private ConnectThread mConnectThread;
@@ -103,9 +103,11 @@ public class BluetoothService extends Service {
                 return 0;
             }
         }
-        String stopservice = intent.getStringExtra("stopservice");
-        if (stopservice != null && stopservice.length() > 0) {
-            stop();
+        if (intent != null) {
+            String stopservice = intent.getStringExtra("stopservice");
+            if (stopservice != null && stopservice.length() > 0) {
+                stop();
+            }
         }
         return START_STICKY;
     }

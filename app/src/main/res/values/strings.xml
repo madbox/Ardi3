@@ -27,4 +27,7 @@
     <string name="title_bluetooth_discovery">Discovery</string>
     <string name="title_bluetooth_discovery_disabled">Inactive</string>
     <string name="title_bluetooth_discovery_in_progress">In progress</string>
+    <string name="bluetooth_dialog_message">Unable to initialize Bluetooth adapter. Application unable to work properly</string>
+    <string name="bluetooth_dialog_title">Bluetooth error</string>
+    <string name="button_ok">Ok</string>
 </resources>

@@ -6,9 +6,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.transition.Slide;
@@ -40,9 +42,9 @@ public class MainActivity extends AppCompatActivity {
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     //Экземпляры классов наших кнопок.
     Button getDistanceButton;
-    ArrayList<MyBluetoothDevice> mListItemsPaired = new ArrayList<MyBluetoothDevice>();
+    ArrayList<MyBluetoothDevice> mListItemsPaired = new ArrayList<>();
     ArrayAdapter<MyBluetoothDevice> mArrayAdapterPaired;
-    ArrayList<MyBluetoothDevice> mListItemsFound = new ArrayList<MyBluetoothDevice>();
+    ArrayList<MyBluetoothDevice> mListItemsFound = new ArrayList<>();
     ArrayAdapter<MyBluetoothDevice> mArrayAdapterFound;
     private final BroadcastReceiver blueToothDiscoveryReciever = new BroadcastReceiver() {
         @Override
@@ -73,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothSocket mSocket;
     private BluetoothDevice mDevice;
 
+    private AlertDialog bluetoothErrorDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,9 +91,9 @@ public class MainActivity extends AppCompatActivity {
         reenterTrans.excludeTarget(toolbar, true);
         getWindow().setReenterTransition(reenterTrans);
 
-
         setSupportActionBar(toolbar);
 
+        bluetoothErrorDialog = createBluetoothFailDialog();
 //        View.OnClickListener getDistanceOnClickListener = new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
@@ -154,14 +158,14 @@ public class MainActivity extends AppCompatActivity {
         };
 
         ListView listViewPaired = (ListView) findViewById(R.id.list_paired_bluetooth_devices);
-        mArrayAdapterPaired = new ArrayAdapter<MyBluetoothDevice>(this,
+        mArrayAdapterPaired = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1,
                 mListItemsPaired);
         listViewPaired.setAdapter(mArrayAdapterPaired);
         listViewPaired.setOnItemClickListener(mOnItemClickListener);
 
         ListView listViewFound = (ListView) findViewById(R.id.list_found_bluetooth_devices);
-        mArrayAdapterFound = new ArrayAdapter<MyBluetoothDevice>(this,
+        mArrayAdapterFound = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1,
                 mListItemsFound);
         listViewFound.setAdapter(mArrayAdapterFound);
@@ -179,6 +183,18 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(blueToothDiscoveryReciever, filter);
 
         bluetoothEnableAndDiscover(this.getCurrentFocus());
+    }
+
+    private AlertDialog createBluetoothFailDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.bluetooth_dialog_message)
+                .setTitle(R.string.bluetooth_dialog_title)
+                .setPositiveButton(R.string.button_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        finish();
+                    }
+                });
+        return builder.create();
     }
 
     @Override
@@ -258,7 +274,12 @@ public class MainActivity extends AppCompatActivity {
     public void bluetoothEnableAndDiscover(View view) {
         //Мы хотим использовать тот bluetooth-адаптер, который задается по умолчанию
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) Log.d(TAG, "mBluetoothAdapter == null");
+        if (mBluetoothAdapter == null) {
+            Log.d(TAG, "mBluetoothAdapter == null");
+            bluetoothErrorDialog.show();
+            Log.d(TAG, "after dialog");
+            return;
+        }
         else Log.d(TAG, "mBluetoothAdapter != null");
 
         setBluetoothStateMarkerText(mBluetoothAdapter.getState());
@@ -327,8 +348,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             Toast.makeText(getApplicationContext(), "Unable to connect", Toast.LENGTH_LONG).show();
-
-            return;
         }
 
         // Do work to manage the connection (in a separate thread)
